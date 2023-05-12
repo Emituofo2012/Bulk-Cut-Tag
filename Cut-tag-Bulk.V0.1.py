@@ -94,6 +94,15 @@ class BulkCutTag():
             self.TxDB = "/home/liugaojing/DataBase/Genome/Human/ensemble/hg38_sm_primary_assembly/release-105/TxDb/TxDbHuman38.FromGtf.sqlite"
             self.geneTransFile = "/home/liugaojing/DataBase/Genome/Human/ensemble/hg38_sm_primary_assembly/release-105/ensembleID_geneName/EnsembleID_geneName.txt"
             self.hintName = "human38"
+        if species == "Mmus":
+            self.gtf = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/Mus_musculus.GRCm39.105.gtf"
+            self.genome = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/Mus_musculus.GRCm39.dna_sm.primary_assembly.fa"
+            self.bowtie2Genome = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/bowtie2Index/MouseGenome"
+            self.genomeSize = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/Mouse.chrom.sizes"
+            self.GenomeEffectiveGenome = "2.6e9"
+            self.TxDB = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/TxDb/TxDbMmus.FromGtf.sqlite"
+            self.geneTransFile = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/ensembleID_geneName/EnsembleID_geneName.txt"
+            self.hintName = "Mmus"
 
     def lnData(self,sampleName,Datapath,filewrite):
         sampleFiles = sorted(glob.glob(Datapath+"/"+sampleName+"*.fq.gz"))
@@ -148,7 +157,7 @@ class BulkCutTag():
     def filteMycoplasma(self,sampleName,filewrite,outPath,targetPath):
         sampleFiles = [targetPath+"/"+sampleName+"_fastpTrimmed.R1.fq.gz",
                        targetPath+"/"+sampleName+"_fastpTrimmed.R2.fq.gz"]
-        cmd = "/home/liugaojing/soft/bowtie2/bowtie2-2.4.1-linux-x86_64/bowtie2 --local --very-sensitive --no-mixed --no-discordant -I 10 -p 4 -x /home/liugaojing/DataBase/Genome/Mycoplasma_hyorhinis/bowtie2Index/Myco"+" -1 "+sampleFiles[0]+" -2 "+sampleFiles[1]+" -S "+outPath+"/"+sampleName+".sam"+" --un-conc-gz "+outPath+"/"+sampleName+".filteMycoplasma.fq.gz"
+        cmd = "/home/liugaojing/soft/bowtie2/bowtie2-2.4.1-linux-x86_64/bowtie2 --local --very-sensitive --no-mixed --no-discordant -I 10 -p 10 -x /home/liugaojing/DataBase/Genome/Mycoplasma_hyorhinis/bowtie2Index/Myco"+" -1 "+sampleFiles[0]+" -2 "+sampleFiles[1]+" -S "+outPath+"/"+sampleName+".sam"+" --un-conc-gz "+outPath+"/"+sampleName+".filteMycoplasma.fq.gz"
         filewrite.write(cmd+"\n")
 
     def alignment(self,sampleName,filewrite,outPath,targetPath):
@@ -156,7 +165,8 @@ class BulkCutTag():
 
         sampleFiles = [targetPath+"/"+sampleName+".filteMycoplasma.fq.1.gz",
                        targetPath+"/"+sampleName+".filteMycoplasma.fq.2.gz"]
-        cmd = "/home/liugaojing/soft/bowtie2/bowtie2-2.4.1-linux-x86_64/bowtie2 --local --very-sensitive --no-mixed --no-discordant -I 10 -p 4 -x "+self.bowtie2Genome+" -1 "+sampleFiles[0]+" -2 "+sampleFiles[1]+" -S "+outPath+"/"+sampleName+".sam"
+#        cmd = "/home/liugaojing/soft/bowtie2/bowtie2-2.4.1-linux-x86_64/bowtie2 --local --very-sensitive --no-mixed --no-discordant -I 10 -X 700 -p 10 -x "+self.bowtie2Genome+" -1 "+sampleFiles[0]+" -2 "+sampleFiles[1]+" -S "+outPath+"/"+sampleName+".sam"
+        cmd = "/home/liugaojing/soft/bowtie2/bowtie2-2.4.1-linux-x86_64/bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 -p 10 -x "+self.bowtie2Genome+" -1 "+sampleFiles[0]+" -2 "+sampleFiles[1]+" -S "+outPath+"/"+sampleName+".sam"
         filewrite.write(cmd+"\n")
 
     def deDup(self):
@@ -170,8 +180,9 @@ class BulkCutTag():
         cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools view -bS -F 0x04 "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sam > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"
         #sam to bam
         cmd3 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"+" -o "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"
+        cmd33 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort -n "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"+" -o "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sortedByName.bam"
         #Convert into bed file format
-        cmd4 = "/home/liugaojing/soft/bedtools/bedtools2-2.25.0/bin/bedtools bamtobed -i "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam -bedpe > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bed"
+        cmd4 = "/home/liugaojing/soft/bedtools/bedtools2-2.25.0/bin/bedtools bamtobed -i "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sortedByName.bam -bedpe > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bed"
         #Keep the read pairs that are on the same chromosome and fragment length less than 1000bp.
         cmd5 = "awk '$1==$4 && $6-$2 < 1000 {print $0}' "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bed > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.clean.bed"
         #Only extract the fragment related columns
@@ -182,6 +193,7 @@ class BulkCutTag():
         filewrite.write(cmd1+"\n")
         filewrite.write(cmd2+"\n")
         filewrite.write(cmd3+"\n")
+        filewrite.write(cmd33+"\n")
         filewrite.write(cmd4+"\n")
         filewrite.write(cmd5+"\n")
         filewrite.write(cmd6+"\n")
@@ -192,10 +204,59 @@ class BulkCutTag():
         cmd2 = "conda activate py37"
         cmd3 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"+" -n "+sampleName+" --outdir "+outPath
         cmd4 = "conda activate base"
+        cmd5 = "sort -k8,8nr "+outPath+"/"+sampleName+"_peaks.narrowPeak > "+outPath+"/"+sampleName+"_peaks.sortByPvalue.narrowPeak"
+#        filewrite.write(cmd1+"\n")
+#        filewrite.write(cmd2+"\n")
+#        filewrite.write(cmd3+"\n")
+#        filewrite.write(cmd4+"\n")
+        filewrite.write(cmd5+"\n")
+
+    def ConditionPeakMerge(self,sampleList,compairName,filewrite,outPath,targetPath,targetPathBam):
+        listFile = []
+        listFileBam = []
+        for eachsample in sampleList:
+            fileName = targetPath+"/"+eachsample+"_peaks.narrowPeak"
+            listFile.append(fileName)
+            fileBam = targetPathBam+"/"+eachsample+".filetMycopy.filterLowQuality.sorted.bam"
+            listFileBam.append(fileBam)
+        cmd1 = "cat "+" ".join(listFile)+" > "+outPath+"/"+compairName+".mergeAll.peaks.narrowPeak"
+        cmd2 = "sort -k1,1 -k2,2n "+outPath+"/"+compairName+".mergeAll.peaks.narrowPeak"+" > "+outPath+"/"+compairName+".mergeAll.peaks.sortedByPosition.narrowPeak"
+        cmd3 = "bedtools merge -i "+outPath+"/"+compairName+".mergeAll.peaks.sortedByPosition.narrowPeak > "+outPath+"/"+compairName+".mergeAll.peaks.merge.narrowPeak"
+        cmd4 = "python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/NarrowPeak_to_SAF.py --In "+outPath+"/"+compairName+".mergeAll.peaks.merge.narrowPeak"+" --Out "+outPath+"/"+compairName+".mergeAll.peaks.merge.saf"
+
         filewrite.write(cmd1+"\n")
         filewrite.write(cmd2+"\n")
         filewrite.write(cmd3+"\n")
         filewrite.write(cmd4+"\n")
+        for eachbamfile in listFileBam:
+            sampleName = eachbamfile.strip().split("/")[-1].strip().split(".")[0]
+            cmd5 = "/home/liugaojing/soft/subread/subread-2.0.2-Linux-x86_64/bin/featureCounts -T 2 -F SAF -a "+outPath+"/"+compairName+".mergeAll.peaks.merge.saf -p -B --countReadPairs"+" -o "+outPath+"/"+sampleName+".readcount.txt"+" -f "+eachbamfile
+            filewrite.write(cmd5+"\n")
+
+    def DESeq2(self,HCcondition,Treatcondition,filewrite,targetPath,outPath):
+        cmd1 = "python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/Get_HC_Treat_readcountFile.py --strHCsample "+",".join(self.dictTypeSample[HCcondition])+" --strTreatmentsample "+",".join(self.dictTypeSample[Treatcondition])+" --targetPath "+targetPath+" --outPath "+outPath
+        cmd2 = "Rscript /home/liugaojing/Pipeline/RNA-seq/script/Deseq2/Deseq2.R --HCFile "+outPath+"/HC.readcount.txt --TreatFile "+outPath+"/Treat.readcount.txt --HCNumber "+str(len(self.dictTypeSample[HCcondition]))+" --TreatmentNumber "+str(len(self.dictTypeSample[Treatcondition]))+" --outPath "+outPath
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
+
+
+    def IDR(self,sample1,sample2,condition,filewrite,outPath,targetPath):
+        cmd1 = "idr --samples "+targetPath+"/"+sample1+"_peaks.sortByPvalue.narrowPeak "+targetPath+"/"+sample2+"_peaks.sortByPvalue.narrowPeak --input-file-type narrowPeak --rank p.value --output-file "+outPath+"/"+condition+".idr.peak.txt"+" --plot --log-output-file "+outPath+"/"+condition+".idr.log"
+        filewrite.write(cmd1+"\n")
+
+    def DiffCUTTAGAnno(self,InputPath,OutPutPath,filewrite):
+        cmd1 = "python /home/liugaojing/Pipeline/Atac-seq/bulk-supple-script/DiffAtacRegion/AnnoPeak.1.py --InputPath "+InputPath+" --OutPutPath "+OutPutPath+" --GeneIDTrans "+self.geneTransFile
+        filewrite.write(cmd1+"\n")
+
+    def HomerDiffCUTTAG(self,inputPath,outPutPath,compairName,filewrite):
+        cmd1 =  'awk \'{print "Peak_"NR"\\t"$1"\\t"$2"\\t"$3"\\t""."}\' '+inputPath+"/"+compairName+"/UP.sig.different.Atac.region.bed > "+outPutPath+"/"+compairName+"/UP.sig.different.Atac.region.bed.saf"
+        cmd2 =  'awk \'{print "Peak_"NR"\\t"$1"\\t"$2"\\t"$3"\\t""."}\' '+inputPath+"/"+compairName+"/DOWN.sig.different.Atac.region.bed > "+outPutPath+"/"+compairName+"/DOWN.sig.different.Atac.region.bed.saf"
+        cmd3 = "/home/liugaojing/soft/homer/bin/findMotifsGenome.pl "+outPutPath+"/"+compairName+"/UP.sig.different.Atac.region.bed.saf "+self.genome+" "+outPutPath+"/"+compairName+"/HomerUPResult -p 4"
+        cmd4 = "/home/liugaojing/soft/homer/bin/findMotifsGenome.pl "+outPutPath+"/"+compairName+"/DOWN.sig.different.Atac.region.bed.saf "+self.genome+" "+outPutPath+"/"+compairName+"/HomerDOWNResult -p 4" 
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
+        filewrite.write(cmd3+"\n")
+        filewrite.write(cmd4+"\n")    
 
     def CreatFile(self):
         if not os.path.isdir(self.rootdir+"/data"):
@@ -228,11 +289,11 @@ class BulkCutTag():
         if not os.path.isdir(self.rootdir+"/PeakCalling"):
             os.system("mkdir "+self.rootdir+"/PeakCalling")
 
-        if not os.path.isdir(self.rootdir+"/MotifEnrichment"):
-            os.system("mkdir "+self.rootdir+"/MotifEnrichment")
+        if not os.path.isdir(self.rootdir+"/DiffPeak"):
+            os.system("mkdir "+self.rootdir+"/DiffPeak")
 
-        if not os.path.isdir(self.rootdir+"/TrackVisualization"):
-            os.system("mkdir "+self.rootdir+"/TrackVisualization")
+        if not os.path.isdir(self.rootdir+"/IDR"):
+            os.system("mkdir "+self.rootdir+"/IDR")
 
 detailObject = BulkCutTag()
 
@@ -282,3 +343,48 @@ for line in open(samplecfg,"r"):
     else:
         print("Error sample Type")
     fileOpen.close()
+
+
+
+
+
+#fileIDR = open("Third.IDR.analysis.sh","w+")
+#for eachcondition in dictTypeSample.keys():
+#    listsample_condition = dictTypeSample[eachcondition]
+#    detailObject.IDR(listsample_condition[0],listsample_condition[1],eachcondition,fileIDR,rootdir+"/IDR",rootdir+"/PeakCalling")
+#fileIDR.close()
+
+conditionPairList = []
+for eachconditionline in open(conditionCompare,"r"):
+    if eachconditionline.strip().split("\t")[0] == "Control":
+        continue
+    else:
+        condition1 = eachconditionline.strip().split("\t")[0]
+        condition2 = eachconditionline.strip().split("\t")[1]
+        conditionPairList.append(condition1+"_"+condition2)
+for eachPair in conditionPairList:
+    condition1 = eachPair.strip().split("_")[0]
+    condition2 = eachPair.strip().split("_")[1]
+    listsample_condition1 = dictTypeSample[condition1]
+    listsample_condition2 = dictTypeSample[condition2]
+
+    compairName = str(condition1)+"_"+str(condition2)
+    if not os.path.isdir(rootdir+"/DiffPeak/"+compairName):
+        os.system("mkdir "+rootdir+"/DiffPeak/"+compairName)
+    if not os.path.isdir(rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult"):
+        os.system("mkdir "+rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult")
+
+    fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
+    listAllsample = listsample_condition1 + listsample_condition2
+#    detailObject.ConditionPeakMerge(listAllsample,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
+    detailObject.DESeq2(condition1,condition2,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/DiffPeak/"+compairName)
+    fileOpenpair.close()
+
+
+
+#    fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
+#    detailObject.diffBind(condition1,condition2,samplecfg,rootdir,rootdir+"/Diffbind/"+compairName,fileOpenpair)
+#    detailObject.getDiffAtac(compairName,fileOpenpair,rootdir+"/Diffbind/"+compairName)
+#    detailObject.DiffAtacAnno(rootdir+"/Diffbind/"+compairName,rootdir+"/Diffbind/"+compairName,fileOpenpair)
+#    detailObject.HomerDiffAtac(rootdir+"/Diffbind",rootdir+"/Diffbind",compairName,fileOpenpair)#    fileOpenpair.close()
+#    fileOpenpair.close()
