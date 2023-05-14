@@ -94,6 +94,7 @@ class BulkCutTag():
             self.TxDB = "/home/liugaojing/DataBase/Genome/Human/ensemble/hg38_sm_primary_assembly/release-105/TxDb/TxDbHuman38.FromGtf.sqlite"
             self.geneTransFile = "/home/liugaojing/DataBase/Genome/Human/ensemble/hg38_sm_primary_assembly/release-105/ensembleID_geneName/EnsembleID_geneName.txt"
             self.hintName = "human38"
+            self.genePosition = "/home/liugaojing/DataBase/Genome/Human/ensemble/hg38_sm_primary_assembly/release-105/GenePosition/GenePosition.bed"
         if species == "Mmus":
             self.gtf = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/Mus_musculus.GRCm39.105.gtf"
             self.genome = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/Mus_musculus.GRCm39.dna_sm.primary_assembly.fa"
@@ -103,6 +104,7 @@ class BulkCutTag():
             self.TxDB = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/TxDb/TxDbMmus.FromGtf.sqlite"
             self.geneTransFile = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/ensembleID_geneName/EnsembleID_geneName.txt"
             self.hintName = "Mmus"
+            self.genePosition = "/home/liugaojing/DataBase/Genome/Mus_musculus/release105/GenePosition/GenePosition.bed"
 
     def lnData(self,sampleName,Datapath,filewrite):
         sampleFiles = sorted(glob.glob(Datapath+"/"+sampleName+"*.fq.gz"))
@@ -180,6 +182,8 @@ class BulkCutTag():
         cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools view -bS -F 0x04 "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sam > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"
         #sam to bam
         cmd3 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"+" -o "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"
+        cmd31 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools index "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"
+        cmd32 = "/home/liugaojing/anaconda3/bin/bamCoverage -b "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam -o "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam.bw"
         cmd33 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort -n "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bam"+" -o "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sortedByName.bam"
         #Convert into bed file format
         cmd4 = "/home/liugaojing/soft/bedtools/bedtools2-2.25.0/bin/bedtools bamtobed -i "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.sortedByName.bam -bedpe > "+outPath+"/"+sampleName+".filetMycopy.filterLowQuality.bed"
@@ -193,6 +197,8 @@ class BulkCutTag():
         filewrite.write(cmd1+"\n")
         filewrite.write(cmd2+"\n")
         filewrite.write(cmd3+"\n")
+        filewrite.write(cmd31+"\n")
+        filewrite.write(cmd32+"\n")
         filewrite.write(cmd33+"\n")
         filewrite.write(cmd4+"\n")
         filewrite.write(cmd5+"\n")
@@ -205,10 +211,10 @@ class BulkCutTag():
         cmd3 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"+" -n "+sampleName+" --outdir "+outPath
         cmd4 = "conda activate base"
         cmd5 = "sort -k8,8nr "+outPath+"/"+sampleName+"_peaks.narrowPeak > "+outPath+"/"+sampleName+"_peaks.sortByPvalue.narrowPeak"
-#        filewrite.write(cmd1+"\n")
-#        filewrite.write(cmd2+"\n")
-#        filewrite.write(cmd3+"\n")
-#        filewrite.write(cmd4+"\n")
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
+        filewrite.write(cmd3+"\n")
+        filewrite.write(cmd4+"\n")
         filewrite.write(cmd5+"\n")
 
     def ConditionPeakMerge(self,sampleList,compairName,filewrite,outPath,targetPath,targetPathBam):
@@ -244,9 +250,9 @@ class BulkCutTag():
         cmd1 = "idr --samples "+targetPath+"/"+sample1+"_peaks.sortByPvalue.narrowPeak "+targetPath+"/"+sample2+"_peaks.sortByPvalue.narrowPeak --input-file-type narrowPeak --rank p.value --output-file "+outPath+"/"+condition+".idr.peak.txt"+" --plot --log-output-file "+outPath+"/"+condition+".idr.log"
         filewrite.write(cmd1+"\n")
 
-    def DiffCUTTAGAnno(self,InputPath,OutPutPath,filewrite):
-        cmd1 = "python /home/liugaojing/Pipeline/Atac-seq/bulk-supple-script/DiffAtacRegion/AnnoPeak.1.py --InputPath "+InputPath+" --OutPutPath "+OutPutPath+" --GeneIDTrans "+self.geneTransFile
-        filewrite.write(cmd1+"\n")
+#    def DiffCUTTAGAnno(self,InputPath,OutPutPath,filewrite):
+#        cmd1 = "python /home/liugaojing/Pipeline/Atac-seq/bulk-supple-script/DiffAtacRegion/AnnoPeak.1.py --InputPath "+InputPath+" --OutPutPath "+OutPutPath+" --GeneIDTrans "+self.geneTransFile
+#        filewrite.write(cmd1+"\n")
 
     def HomerDiffCUTTAG(self,inputPath,outPutPath,compairName,filewrite):
         cmd1 =  'awk \'{print "Peak_"NR"\\t"$1"\\t"$2"\\t"$3"\\t""."}\' '+inputPath+"/"+compairName+"/UP.sig.different.Atac.region.bed > "+outPutPath+"/"+compairName+"/UP.sig.different.Atac.region.bed.saf"
@@ -257,6 +263,20 @@ class BulkCutTag():
         filewrite.write(cmd2+"\n")
         filewrite.write(cmd3+"\n")
         filewrite.write(cmd4+"\n")    
+
+    def DiffCutTagAnno(self,inputFile,outPutFile,PeakPosition,filewrite,outPutPath):
+        cmd1 = "python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/DiffCutTag.anno.py --InputFile "+inputFile+" --OutPutPath "+outPutFile+" --PeakPosition "+PeakPosition
+        cmd2 = "Rscript /home/liugaojing/Pipeline/Atac-seq/bulk-supple-script/DiffAtacRegion/chipseekerAnno.r --PeakFile "+outPutFile+" --TxDB "+self.TxDB+" --OutPath "+outPutPath
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
+
+    def getUPDownPeak(self,inputFile,OutPutPath,pvalue,qvalue,FoldChange,PeakPosition,Deseq2File,filewrite):
+        cmd1 = "python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/GetUPDonePeak.py --InputFile "+inputFile+" --OutPutPath "+OutPutPath+" --pvalueTh "+str(pvalue)+" --qvalueTh "+str(qvalue)+" --foldChangeTh "+str(FoldChange)+" --PeakPosition "+PeakPosition+" --EnsemblTOsymbl "+self.geneTransFile+" --DeseqFile "+Deseq2File
+        filewrite.write(cmd1+"\n")
+
+    def Visualization(self,allsamplestr,InPutPath,OutPutPath,scriptPath):
+        os.system("python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/PrepareComputeMatrix.py --allsamplestr "+allsamplestr+" --InPutPath "+InPutPath+" --OutPutPath "+OutPutPath+" --bedfile "+self.genePosition+" --scriptPath "+scriptPath)
+        
 
     def CreatFile(self):
         if not os.path.isdir(self.rootdir+"/data"):
@@ -295,17 +315,22 @@ class BulkCutTag():
         if not os.path.isdir(self.rootdir+"/IDR"):
             os.system("mkdir "+self.rootdir+"/IDR")
 
+        if not os.path.isdir(self.rootdir+"/Visualization"):
+            os.system("mkdir "+self.rootdir+"/Visualization")
+
 detailObject = BulkCutTag()
 
 detailObject.CreatFile()
 
 dictTypeSample = {} #{"50K":[SRR891268,SRR891269,SRR891270,SRR891271]}
 listCondition = []
+listAllsample = []
 for line in open(samplecfg,"r"):
     sampleName = line.strip().split("\t")[0]
     samplePath = line.strip().split("\t")[1]
     condition = line.strip().split("\t")[-1]
     listCondition.append(condition)
+    listAllsample.append(sampleName)
 
     if condition in dictTypeSample.keys():
         dictTypeSample[condition].append(sampleName)
@@ -332,21 +357,17 @@ for line in open(samplecfg,"r"):
         detailObject.HintAtacsingleSample(sampleName,rootdir+"/TFfootprinting/"+sampleName,rootdir+"/Bowtie2",rootdir+"/PeakCalling",fileOpen)
         
     elif dataType == "cleanData":
-#        detailObject.lnData(sampleName,samplePath,fileOpen)
-#        detailObject.FastQC(sampleName,rootdir+"/data",fileOpen,rootdir+"/FirstFastqc")
-#        detailObject.lnCleanData(sampleName,samplePath,rootdir+"/Fastp",fileOpen)
+        detailObject.lnData(sampleName,samplePath,fileOpen)
+        detailObject.FastQC(sampleName,rootdir+"/data",fileOpen,rootdir+"/FirstFastqc")
+        detailObject.lnCleanData(sampleName,samplePath,rootdir+"/Fastp",fileOpen)
 ##        detailObject.trim_fastqc(rootdir+"/Fastp",sampleName+"_fastpTrimmed.R1.fq.gz",sampleName+"_fastpTrimmed.R2.fq.gz",fileOpen,rootdir+"/SecondFastqc")
-#        detailObject.filteMycoplasma(sampleName,fileOpen,rootdir+"/FilteMycoplasma",rootdir+"/Fastp")
-#        detailObject.alignment(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/FilteMycoplasma")
-#        detailObject.samtools(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/Bowtie2")
+        detailObject.filteMycoplasma(sampleName,fileOpen,rootdir+"/FilteMycoplasma",rootdir+"/Fastp")
+        detailObject.alignment(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/FilteMycoplasma")
+        detailObject.samtools(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/Bowtie2")
         detailObject.MACS2(sampleName,fileOpen,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     else:
         print("Error sample Type")
     fileOpen.close()
-
-
-
-
 
 #fileIDR = open("Third.IDR.analysis.sh","w+")
 #for eachcondition in dictTypeSample.keys():
@@ -376,15 +397,11 @@ for eachPair in conditionPairList:
 
     fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
     listAllsample = listsample_condition1 + listsample_condition2
-#    detailObject.ConditionPeakMerge(listAllsample,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
+    detailObject.ConditionPeakMerge(listAllsample,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     detailObject.DESeq2(condition1,condition2,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/DiffPeak/"+compairName)
+    detailObject.DiffCutTagAnno(rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",rootdir+"/DiffPeak/"+compairName+"/All.DESeq2.Peask.bed",rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",fileOpenpair,rootdir+"/DiffPeak/"+compairName)
+    detailObject.getUPDownPeak(rootdir+"/DiffPeak/"+compairName+"/PeakAnno.result.tsv",rootdir+"/DiffPeak/"+compairName,0.05,0.05,1,rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",fileOpenpair)
+    
     fileOpenpair.close()
 
-
-
-#    fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
-#    detailObject.diffBind(condition1,condition2,samplecfg,rootdir,rootdir+"/Diffbind/"+compairName,fileOpenpair)
-#    detailObject.getDiffAtac(compairName,fileOpenpair,rootdir+"/Diffbind/"+compairName)
-#    detailObject.DiffAtacAnno(rootdir+"/Diffbind/"+compairName,rootdir+"/Diffbind/"+compairName,fileOpenpair)
-#    detailObject.HomerDiffAtac(rootdir+"/Diffbind",rootdir+"/Diffbind",compairName,fileOpenpair)#    fileOpenpair.close()
-#    fileOpenpair.close()
+detailObject.Visualization(",".join(listAllsample),rootdir+"/Bowtie2",rootdir+"/Visualization",rootdir)
