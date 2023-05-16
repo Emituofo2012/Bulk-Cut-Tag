@@ -156,6 +156,10 @@ class BulkCutTag():
         cmd = fastqc+" --format fastq --noextract --outdir "+fileOutPath+" "+filepath+"/"+name1+" "+filepath+"/"+name2
         filewrite.write(cmd+"\n")
 
+    def Multiqc(self,TargetPath,OutPutPath,filewrite):
+        cmd = "/home/liugaojing/anaconda3/bin/multiqc "+TargetPath+"/"+" -o "+OutPutPath
+        filewrite.write(cmd+"\n")
+
     def filteMycoplasma(self,sampleName,filewrite,outPath,targetPath):
         sampleFiles = [targetPath+"/"+sampleName+"_fastpTrimmed.R1.fq.gz",
                        targetPath+"/"+sampleName+"_fastpTrimmed.R2.fq.gz"]
@@ -318,19 +322,22 @@ class BulkCutTag():
         if not os.path.isdir(self.rootdir+"/Visualization"):
             os.system("mkdir "+self.rootdir+"/Visualization")
 
+        if not os.path.isdir(self.rootdir+"/FirstMultiQC"):
+            os.system("mkdir "+self.rootdir+"/FirstMultiQC")
+
 detailObject = BulkCutTag()
 
 detailObject.CreatFile()
 
 dictTypeSample = {} #{"50K":[SRR891268,SRR891269,SRR891270,SRR891271]}
 listCondition = []
-listAllsample = []
+listAllsampleAll = []
 for line in open(samplecfg,"r"):
     sampleName = line.strip().split("\t")[0]
     samplePath = line.strip().split("\t")[1]
     condition = line.strip().split("\t")[-1]
     listCondition.append(condition)
-    listAllsample.append(sampleName)
+    listAllsampleAll.append(sampleName)
 
     if condition in dictTypeSample.keys():
         dictTypeSample[condition].append(sampleName)
@@ -374,6 +381,18 @@ for line in open(samplecfg,"r"):
 #    listsample_condition = dictTypeSample[eachcondition]
 #    detailObject.IDR(listsample_condition[0],listsample_condition[1],eachcondition,fileIDR,rootdir+"/IDR",rootdir+"/PeakCalling")
 #fileIDR.close()
+if dataType == "rawData":
+    fileshell = open("second.analysis.peakMerge.sh","w+")
+    detailObject.Multiqc(rootdir+"/FirstFastqc",rootdir+"/FirstMultiQC",fileshell)
+    detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
+    fileshell.close()
+if dataType == "cleanData":
+    fileshell = open("second.analysis.peakMerge.sh","w+")
+    detailObject.Multiqc(rootdir+"/FirstFastqc",rootdir+"/FirstMultiQC",fileshell)
+#    detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
+    fileshell.close()
+
+
 
 conditionPairList = []
 for eachconditionline in open(conditionCompare,"r"):
@@ -396,12 +415,12 @@ for eachPair in conditionPairList:
         os.system("mkdir "+rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult")
 
     fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
-    listAllsample = listsample_condition1 + listsample_condition2
-    detailObject.ConditionPeakMerge(listAllsample,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
+    listAllsampleCondition = listsample_condition1 + listsample_condition2
+    detailObject.ConditionPeakMerge(listAllsampleCondition,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     detailObject.DESeq2(condition1,condition2,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/DiffPeak/"+compairName)
     detailObject.DiffCutTagAnno(rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",rootdir+"/DiffPeak/"+compairName+"/All.DESeq2.Peask.bed",rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",fileOpenpair,rootdir+"/DiffPeak/"+compairName)
-    detailObject.getUPDownPeak(rootdir+"/DiffPeak/"+compairName+"/PeakAnno.result.tsv",rootdir+"/DiffPeak/"+compairName,0.05,0.05,1,rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",fileOpenpair)
+    detailObject.getUPDownPeak(rootdir+"/DiffPeak/"+compairName+"/PeakAnno.result.tsv",rootdir+"/DiffPeak/"+compairName,0.05,1,0.585,rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",fileOpenpair)
     
     fileOpenpair.close()
 
-detailObject.Visualization(",".join(listAllsample),rootdir+"/Bowtie2",rootdir+"/Visualization",rootdir)
+detailObject.Visualization(",".join(listAllsampleAll),rootdir+"/Bowtie2",rootdir+"/Visualization",rootdir)
