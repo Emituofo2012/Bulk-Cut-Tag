@@ -28,14 +28,8 @@ parser.add_argument('-q','--qvalue',help='DEG threshold q value, p value adjust,
 parser.add_argument('-fdc','--foldchange',help='DEG threshold expression fold change(log2(folachange)), default=1',default=1)
 parser.add_argument('--dataType',help='cleanData or rawData, default=cleanData',default="cleanData")
 parser.add_argument('--species',help='Human or Rat or Zokor,default=Human',default="Human")
-parser.add_argument('--FileTail',help='fastq.gz or fq.gz',default="fq.gz")
-parser.add_argument('--SampleNumber',help='Sample numbers',default="6")
-parser.add_argument('--MTname',help='mitochondrial chromosome name in gtf',default="MT")
-parser.add_argument('--MethDeeptools',help='Use deeptools to find shared region,YES or No',default="YES")
-parser.add_argument('--MethIDR',help='Use IDR to find shared region,YES or No',default="YES")
-parser.add_argument('--DIffBind',help='Use DiffBind to find different atac region,YES or No',default="YES")
-parser.add_argument('--mergeType',help='Just BedtoolsMerge or IntersectMerge.The method used to merge peaks,BedtoolsMerge means merge all sample peaks in one bed,IntersectMerge means bedtools intersect in the same condition,Then, bedtools merge between different(control and treat) contion',default="BedtoolsMerge")
 parser.add_argument('--conditionCompare','-CC',help='Condition files contain paired condition which used to get different atac region',required=True)
+parser.add_argument('--IgGsample',help='The text file contain sample and IgG blan sample',required=True)
 
 argv=vars(parser.parse_args())
 samplecfg        = argv['samplecfg']
@@ -45,14 +39,8 @@ qvalue           = argv['qvalue']
 foldchange       = argv['foldchange']
 dataType         = argv['dataType']
 species          = argv['species']
-FileTail         = argv['FileTail']
-SampleNumber     = argv['SampleNumber']
-MTname           = argv['MTname']
-MethDeeptools    = argv['MethDeeptools']
-MethIDR          = argv['MethIDR']
-DIffBind         = argv['DIffBind']
-mergeType        = argv['mergeType']
 conditionCompare = argv['conditionCompare']
+IgGsample        = argv['IgGsample']
 
 rootdir = os.getcwd()
 
@@ -209,16 +197,16 @@ class BulkCutTag():
         filewrite.write(cmd6+"\n")
         filewrite.write(cmd7+"\n")
 
-    def MACS2(self,sampleName,filewrite,outPath,targetPath):
-        cmd1 = "source /home/liugaojing/anaconda3/etc/profile.d/conda.sh"
-        cmd2 = "conda activate py37"
-        cmd3 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam"+" -n "+sampleName+" --outdir "+outPath
-        cmd4 = "conda activate base"
+    def MACS2(self,sampleName,IgGsampleName,filewrite,outPath,targetPath):
+#        cmd1 = "source /home/liugaojing/anaconda3/etc/profile.d/conda.sh"
+#        cmd2 = "conda activate py37"
+        cmd3 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam -c "+targetPath+"/"+IgGsampleName+".filetMycopy.filterLowQuality.sorted.bam"+" -n "+sampleName+" --outdir "+outPath+" -q 0.1"
+#        cmd4 = "conda activate base"
         cmd5 = "sort -k8,8nr "+outPath+"/"+sampleName+"_peaks.narrowPeak > "+outPath+"/"+sampleName+"_peaks.sortByPvalue.narrowPeak"
-        filewrite.write(cmd1+"\n")
-        filewrite.write(cmd2+"\n")
+#        filewrite.write(cmd1+"\n")
+#        filewrite.write(cmd2+"\n")
         filewrite.write(cmd3+"\n")
-        filewrite.write(cmd4+"\n")
+#        filewrite.write(cmd4+"\n")
         filewrite.write(cmd5+"\n")
 
     def ConditionPeakMerge(self,sampleList,compairName,filewrite,outPath,targetPath,targetPathBam):
@@ -371,7 +359,6 @@ for line in open(samplecfg,"r"):
         detailObject.filteMycoplasma(sampleName,fileOpen,rootdir+"/FilteMycoplasma",rootdir+"/Fastp")
         detailObject.alignment(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/FilteMycoplasma")
         detailObject.samtools(sampleName,fileOpen,rootdir+"/Bowtie2",rootdir+"/Bowtie2")
-        detailObject.MACS2(sampleName,fileOpen,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     else:
         print("Error sample Type")
     fileOpen.close()
@@ -382,17 +369,28 @@ for line in open(samplecfg,"r"):
 #    detailObject.IDR(listsample_condition[0],listsample_condition[1],eachcondition,fileIDR,rootdir+"/IDR",rootdir+"/PeakCalling")
 #fileIDR.close()
 if dataType == "rawData":
-    fileshell = open("second.analysis.peakMerge.sh","w+")
+    fileshell = open("Second.MultiQc.analysis.sh","w+")
     detailObject.Multiqc(rootdir+"/FirstFastqc",rootdir+"/FirstMultiQC",fileshell)
     detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
     fileshell.close()
 if dataType == "cleanData":
-    fileshell = open("second.analysis.peakMerge.sh","w+")
+    fileshell = open("Second.MultiQc.analysis.sh","w+")
     detailObject.Multiqc(rootdir+"/FirstFastqc",rootdir+"/FirstMultiQC",fileshell)
 #    detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
     fileshell.close()
 
-
+fThird = open("Third.Peakcalling.analysis.sh","w+")
+fThird.write("source /home/liugaojing/anaconda3/etc/profile.d/conda.sh"+"\n")
+fThird.write("conda activate py37"+"\n")
+for eachIgGline in open(IgGsample,"r"):
+    sampleName = eachIgGline.strip().split("\t")[0]
+    if sampleName == "Sample":
+        continue
+    else:
+        IgGName = eachIgGline.strip().split("\t")[1]
+        detailObject.MACS2(sampleName,IgGName,fThird,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
+fThird.write("conda activate base")
+fThird.close()
 
 conditionPairList = []
 for eachconditionline in open(conditionCompare,"r"):
@@ -414,7 +412,7 @@ for eachPair in conditionPairList:
     if not os.path.isdir(rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult"):
         os.system("mkdir "+rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult")
 
-    fileOpenpair = open("Third."+compairName+".diff.CutTag.analysis.sh","w+")
+    fileOpenpair = open("Fourth."+compairName+".diff.CutTag.analysis.sh","w+")
     listAllsampleCondition = listsample_condition1 + listsample_condition2
     detailObject.ConditionPeakMerge(listAllsampleCondition,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     detailObject.DESeq2(condition1,condition2,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/DiffPeak/"+compairName)
