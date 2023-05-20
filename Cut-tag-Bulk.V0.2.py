@@ -52,6 +52,7 @@ class BulkCutTag():
         self.dictTypeSample = {} #{"condit1":[sample1,sample2,sample3]}
         self.listAllSample = []  #[sample1,sample2,sample3]
         self.listAllType = []    #[condition1,condition2,condition3...]
+        self.dictIgG     = {}    #{"sample1":"IgGsample"}   {"SRR12246717":"SRR11923224"}
         for eachline in open(samplecfg,"r"):
             sampleName = eachline.strip().split("\t")[0]
             sampleType = eachline.strip().split("\t")[2]
@@ -62,6 +63,12 @@ class BulkCutTag():
             else:
                 self.dictTypeSample[sampleType] = [sampleName]
         print(self.dictTypeSample)
+
+        for eachIgGline in open(IgGsample,"r"):
+            if eachIgGline.strip().split("\t")[0] == "Sample":
+                continue
+            else:
+                self.dictIgG[eachIgGline.strip().split("\t")[0]] = eachIgGline.strip().split("\t")[1]
 
         self.list_compair = []
         for eachconditionline in open(conditionCompare,"r"):
@@ -198,25 +205,21 @@ class BulkCutTag():
         filewrite.write(cmd7+"\n")
 
     def MACS2(self,sampleName,IgGsampleName,filewrite,outPath,targetPath):
-#        cmd1 = "source /home/liugaojing/anaconda3/etc/profile.d/conda.sh"
-#        cmd2 = "conda activate py37"
-        cmd3 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".filetMycopy.filterLowQuality.sorted.bam -c "+targetPath+"/"+IgGsampleName+".filetMycopy.filterLowQuality.sorted.bam"+" -n "+sampleName+" --outdir "+outPath+" -q 0.1"
-#        cmd4 = "conda activate base"
-        cmd5 = "sort -k8,8nr "+outPath+"/"+sampleName+"_peaks.narrowPeak > "+outPath+"/"+sampleName+"_peaks.sortByPvalue.narrowPeak"
-#        filewrite.write(cmd1+"\n")
-#        filewrite.write(cmd2+"\n")
-        filewrite.write(cmd3+"\n")
-#        filewrite.write(cmd4+"\n")
-        filewrite.write(cmd5+"\n")
+        cmd1 = "/home/liugaojing/anaconda3/envs/py37/bin/macs2 callpeak "+"-g "+str(self.GenomeEffectiveGenome)+" -f BAMPE --keep-dup all --bdg --call-summits -t "+targetPath+"/"+sampleName+".merge.sorted.bam -c "+targetPath+"/"+IgGsampleName+".merge.sorted.bam"+" -n "+sampleName+" --outdir "+outPath+" -q 0.1"
+        cmd2 = "sort -k8,8nr "+outPath+"/"+sampleName+"_peaks.narrowPeak > "+outPath+"/"+sampleName+"_peaks.sortByPvalue.narrowPeak"
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
 
-    def ConditionPeakMerge(self,sampleList,compairName,filewrite,outPath,targetPath,targetPathBam):
+    def ConditionPeakMerge(self,conditionList,compairName,filewrite,outPath,targetPath,targetPathBam):
         listFile = []
         listFileBam = []
-        for eachsample in sampleList:
-            fileName = targetPath+"/"+eachsample+"_peaks.narrowPeak"
+        for eachcondition in conditionList:
+            fileName = targetPath+"/"+eachcondition+"_peaks.narrowPeak"
             listFile.append(fileName)
-            fileBam = targetPathBam+"/"+eachsample+".filetMycopy.filterLowQuality.sorted.bam"
-            listFileBam.append(fileBam)
+            
+            for eachsample in self.dictTypeSample[eachcondition]:
+                fileBam = targetPathBam+"/"+eachsample+".filetMycopy.filterLowQuality.sorted.bam"
+                listFileBam.append(fileBam)
         cmd1 = "cat "+" ".join(listFile)+" > "+outPath+"/"+compairName+".mergeAll.peaks.narrowPeak"
         cmd2 = "sort -k1,1 -k2,2n "+outPath+"/"+compairName+".mergeAll.peaks.narrowPeak"+" > "+outPath+"/"+compairName+".mergeAll.peaks.sortedByPosition.narrowPeak"
         cmd3 = "bedtools merge -i "+outPath+"/"+compairName+".mergeAll.peaks.sortedByPosition.narrowPeak > "+outPath+"/"+compairName+".mergeAll.peaks.merge.narrowPeak"
@@ -269,6 +272,19 @@ class BulkCutTag():
     def Visualization(self,allsamplestr,InPutPath,OutPutPath,scriptPath):
         os.system("python /home/liugaojing/Pipeline/CUTTAG/supplementary_script/PrepareComputeMatrix.py --allsamplestr "+allsamplestr+" --InPutPath "+InPutPath+" --OutPutPath "+OutPutPath+" --bedfile "+self.genePosition+" --scriptPath "+scriptPath)
         
+    def MergeBam(self,OutPath,conditionName,filewrite):
+        listIn = []
+#        listBlankBam = []
+        for eachsample in self.dictTypeSample[conditionName]:
+            bamFile = self.rootdir+"/Bowtie2/"+eachsample+".filetMycopy.filterLowQuality.sorted.bam"
+            listIn.append(bamFile)
+#            BlankbamFile = self.rootdir+"/Bowtie2/"+self.dictIgG[eachsample]+".filetMycopy.filterLowQuality.sorted.bam"
+#            listBlankBam.append()
+        cmd1 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools merge -@ 4 -o "+OutPath+"/"+conditionName+".merge.bam "+" ".join(listIn)
+        cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort -@ 4 "+OutPath+"/"+conditionName+".merge.bam -o "+OutPath+"/"+conditionName+".merge.sorted.bam "
+#        cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools merge -@ 4 -o "+OutPath+"/"+conditionName+".Blank.merge.bam "+" ".join(listBlankBam)
+        filewrite.write(cmd1+"\n")
+        filewrite.write(cmd2+"\n")
 
     def CreatFile(self):
         if not os.path.isdir(self.rootdir+"/data"):
@@ -312,6 +328,9 @@ class BulkCutTag():
 
         if not os.path.isdir(self.rootdir+"/FirstMultiQC"):
             os.system("mkdir "+self.rootdir+"/FirstMultiQC")
+
+        if not os.path.isdir(self.rootdir+"/BamMerge"):
+            os.system("mkdir "+self.rootdir+"/BamMerge")
 
 detailObject = BulkCutTag()
 
@@ -379,6 +398,13 @@ if dataType == "cleanData":
 #    detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
     fileshell.close()
 
+fThird = open("Third.MergeSameConditionBam.analysis.sh","w+")
+for eachcondition in list(set(listCondition)):
+#    if not os.path.isdir(rootdir+"/BamMerge/"+eachcondition):
+#        os.system("mkdir "+rootdir+"/BamMerge/"+eachcondition)
+    detailObject.MergeBam(rootdir+"/BamMerge",eachcondition,fThird)
+fThird.close()
+
 fThird = open("Third.Peakcalling.analysis.sh","w+")
 fThird.write("source /home/liugaojing/anaconda3/etc/profile.d/conda.sh"+"\n")
 fThird.write("conda activate py37"+"\n")
@@ -387,8 +413,9 @@ for eachIgGline in open(IgGsample,"r"):
     if sampleName == "Sample":
         continue
     else:
+        condition1Name = eachIgGline.strip().split("\t")[0]
         IgGName = eachIgGline.strip().split("\t")[1]
-        detailObject.MACS2(sampleName,IgGName,fThird,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
+        detailObject.MACS2(condition1Name,IgGName,fThird,rootdir+"/PeakCalling",rootdir+"/BamMerge")
 fThird.write("conda activate base")
 fThird.close()
 
@@ -403,17 +430,18 @@ for eachconditionline in open(conditionCompare,"r"):
 for eachPair in conditionPairList:
     condition1 = eachPair.strip().split("_")[0]
     condition2 = eachPair.strip().split("_")[1]
-    listsample_condition1 = dictTypeSample[condition1]
-    listsample_condition2 = dictTypeSample[condition2]
+#    listsample_condition1 = dictTypeSample[condition1]
+#    listsample_condition2 = dictTypeSample[condition2]
 
     compairName = str(condition1)+"_"+str(condition2)
     if not os.path.isdir(rootdir+"/DiffPeak/"+compairName):
         os.system("mkdir "+rootdir+"/DiffPeak/"+compairName)
-    if not os.path.isdir(rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult"):
-        os.system("mkdir "+rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult")
+#    if not os.path.isdir(rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult"):
+#        os.system("mkdir "+rootdir+"/DiffPeak/"+compairName+"/HomerDOWNResult")
 
     fileOpenpair = open("Fourth."+compairName+".diff.CutTag.analysis.sh","w+")
-    listAllsampleCondition = listsample_condition1 + listsample_condition2
+#    listAllsampleCondition = listsample_condition1 + listsample_condition2
+    listAllsampleCondition = [condition1,condition2]
     detailObject.ConditionPeakMerge(listAllsampleCondition,compairName,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/PeakCalling",rootdir+"/Bowtie2")
     detailObject.DESeq2(condition1,condition2,fileOpenpair,rootdir+"/DiffPeak/"+compairName,rootdir+"/DiffPeak/"+compairName)
     detailObject.DiffCutTagAnno(rootdir+"/DiffPeak/"+compairName+"/Deseq2_HC_vs_Treat_diff.xls",rootdir+"/DiffPeak/"+compairName+"/All.DESeq2.Peask.bed",rootdir+"/DiffPeak/"+compairName+"/"+compairName+".mergeAll.peaks.merge.saf",fileOpenpair,rootdir+"/DiffPeak/"+compairName)
