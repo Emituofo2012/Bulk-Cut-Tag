@@ -398,7 +398,7 @@ if dataType == "cleanData":
 #    detailObject.Multiqc(rootdir+"/SecondFastqc",rootdir+"/SecondMultiQC",fileshell)
     fileshell.close()
 
-fThird = open("Third.MergeSameConditionBam.analysis.sh","w+")
+fThird = open("Second.MergeSameConditionBam.analysis.sh","w+")
 for eachcondition in list(set(listCondition)):
 #    if not os.path.isdir(rootdir+"/BamMerge/"+eachcondition):
 #        os.system("mkdir "+rootdir+"/BamMerge/"+eachcondition)
