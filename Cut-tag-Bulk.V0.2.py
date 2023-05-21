@@ -280,8 +280,8 @@ class BulkCutTag():
             listIn.append(bamFile)
 #            BlankbamFile = self.rootdir+"/Bowtie2/"+self.dictIgG[eachsample]+".filetMycopy.filterLowQuality.sorted.bam"
 #            listBlankBam.append()
-        cmd1 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools merge -@ 4 -o "+OutPath+"/"+conditionName+".merge.bam "+" ".join(listIn)
-        cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort -@ 4 "+OutPath+"/"+conditionName+".merge.bam -o "+OutPath+"/"+conditionName+".merge.sorted.bam "
+        cmd1 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools merge -@ 20 -o "+OutPath+"/"+conditionName+".merge.bam "+" ".join(listIn)
+        cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools sort -@ 20 "+OutPath+"/"+conditionName+".merge.bam -o "+OutPath+"/"+conditionName+".merge.sorted.bam "
 #        cmd2 = "/home/liugaojing/soft/samtools/samtools-1.14/bin/bin/samtools merge -@ 4 -o "+OutPath+"/"+conditionName+".Blank.merge.bam "+" ".join(listBlankBam)
         filewrite.write(cmd1+"\n")
         filewrite.write(cmd2+"\n")
