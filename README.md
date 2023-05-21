@@ -30,3 +30,7 @@ Fifth：
 Sample  Blank
 2A  1A
 1A is a IgG control sample for 2A
+
+After running, a series of shell scripts will be generated. The scripts start with ordinal numbers such as "First", "Second", etc. This is also the order in which the shell scripts should be run.
+
+You can use the “Multiple.processing.py” script to submit these tasks in bulk. This script can help automate the submission and execution of multiple scripts to speed up task processing.
