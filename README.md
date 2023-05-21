@@ -9,8 +9,8 @@ Five Parameters are required, include:
 First:
 --samplecfg,a text file. it is a sample config file with format as:
 samplename  dataPath  condition
-1A1 /data/users/liugaojing/project/qiongfang/cutTag-20230414/00.CleanData/allFileLn 1A
-1A2 /data/users/liugaojing/project/qiongfang/cutTag-20230414/00.CleanData/allFileLn 1A
+1A1 dataPath 1A
+1A2 dataPath 1A
 three columns,First columns is a sample name,Second columns is a data path which contain samples sequence path,Third is a condition(control or treatment).Seperate by tab.
 
 Second:
